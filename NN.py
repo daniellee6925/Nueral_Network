@@ -47,8 +47,17 @@ print(outputs)
 
 
 class Activation_ReLU:
+    # forward pass
     def forward(self, inputs):
+        self.inputs = inputs
         self.output = np.maximum(0, inputs)
+
+    # backward pass
+    def backward(self, dvalues):
+        self.dinputs = dvalues.copy()
+
+        # zero gradient where inputs are negative
+        self.dinputs[self.inputs <= 0] = 0
 
 
 class Activation_Softmax:
@@ -67,6 +76,14 @@ class Layer_Dense:
 
     def forward(self, inputs):
         self.output = np.dot(inputs, self.weights) + self.biases
+
+    # backward pass
+    def backward(self, dvalues):
+        # gradients on paremeters
+        self.dweights = np.dot(self.inputs.T, dvalues)
+        self.dbiases = np.sum(dvalues, axis=0, keepdims=True)
+        # gradient on values
+        self.dinputs = np.dot(dvalues, self.weights.T)
 
 
 class Loss:
