@@ -46,4 +46,10 @@ projected_age = new_person.project_age(years=10)
 new_astronaut = Astronaut("Guya", 9, "Gold", 48)
 return_age = new_astronaut.age_on_return()
 
-print(return_age)
+
+import numpy as np
+
+y_true = np.array([1, 0, 1])
+print(len(y_true.shape))
+if len(y_true.shape) == 2:
+    y_true = np.argmax(y_true, axis=1)

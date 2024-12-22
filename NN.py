@@ -148,6 +148,42 @@ class Loss_CategoricalCrossEntropy(Loss):
         self.dinputs = self.dinputs / samples
 
 
+# combined softmax + cross-entropy loss for faster backward step
+class Activation_Softmax_Loss_CategoricalCrossentropy:
+    def __init__(self):
+        # set activation to Softmax
+        self.activation = Activation_Softmax
+
+        # set loss to categorical cross entropy
+        self.loss = Loss_CategoricalCrossEntropy()
+
+    # forward pass
+    def forward(self, inputs, y_true):
+        # inputs foward using the activation function
+        self.activation.forward(inputs)
+        # set the output
+        self.output = self.activation.output
+        # calculate and return loss value
+        return self.loss.calculate(self.output, y_true)
+
+    # backward pass
+    def backward(self, dvalues, y_true):
+        # number of samples
+        samples = len(dvalues)
+        # if labels are one-hot encoded, turn them into discrete values
+        if len(y_true.shape) == 2:
+            y_true = np.argmax(y_true, axis=1)
+
+        # copy dvalues
+        self.dinputs = dvalues.copy()
+
+        # calculate gradient
+        self.dinputs[range(samples), y_true] -= 1
+
+        # normalize gradient
+        self.dinputs = self.dinputs / samples
+
+
 dense1 = Layer_Dense(2, 3)
 activation1 = Activation_ReLU()
 
