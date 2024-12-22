@@ -149,7 +149,7 @@ class Loss_CategoricalCrossEntropy(Loss):
 
 
 # combined softmax + cross-entropy loss for faster backward step
-class Activation_Softmax_Loss_CategoricalCrossentropy:
+class Activation_Softmax_loss_CategoricalCrossentropy:
     def __init__(self):
         # set activation to Softmax
         self.activation = Activation_Softmax
