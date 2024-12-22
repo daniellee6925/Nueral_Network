@@ -46,6 +46,23 @@ print(outputs)
 """
 
 
+class Layer_Dense:
+    def __init__(self, n_inputs, n_nuerons):
+        self.weights = 0.1 * np.random.randn(n_inputs, n_nuerons)
+        self.biases = np.zeros((1, n_nuerons))
+
+    def forward(self, inputs):
+        self.output = np.dot(inputs, self.weights) + self.biases
+
+    # backward pass
+    def backward(self, dvalues):
+        # gradients on paremeters
+        self.dweights = np.dot(self.inputs.T, dvalues)
+        self.dbiases = np.sum(dvalues, axis=0, keepdims=True)
+        # gradient on values
+        self.dinputs = np.dot(dvalues, self.weights.T)
+
+
 class Activation_ReLU:
     # forward pass
     def forward(self, inputs):
@@ -67,23 +84,6 @@ class Activation_Softmax:
         )  # prevent overflow
         probabilities = exp_values / np.sum(exp_values, axis=1, keepdims=True)
         self.output = probabilities
-
-
-class Layer_Dense:
-    def __init__(self, n_inputs, n_nuerons):
-        self.weights = 0.1 * np.random.randn(n_inputs, n_nuerons)
-        self.biases = np.zeros((1, n_nuerons))
-
-    def forward(self, inputs):
-        self.output = np.dot(inputs, self.weights) + self.biases
-
-    # backward pass
-    def backward(self, dvalues):
-        # gradients on paremeters
-        self.dweights = np.dot(self.inputs.T, dvalues)
-        self.dbiases = np.sum(dvalues, axis=0, keepdims=True)
-        # gradient on values
-        self.dinputs = np.dot(dvalues, self.weights.T)
 
 
 class Loss:
@@ -115,6 +115,21 @@ class Loss_CategoricalCrossEntropy(Loss):
 
         negative_log_likelihoods = -np.log(correct_confidences)
         return negative_log_likelihoods
+
+    # backward pass
+    def backward(self, dvalues, y_true):
+        samples = len(dvalues)
+        labels = len(dvalues[0])
+
+        # one hot encode labels
+        if len(y_true.shape) == 1:
+            y_true = np.eye(labels)[y_true]
+
+        # derivative of cross entropy
+        self.dinputs = -y_true / dvalues
+
+        # normalize gradient
+        self.dinputs = self.dinputs / samples
 
 
 dense1 = Layer_Dense(2, 3)

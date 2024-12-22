@@ -95,6 +95,3 @@ dbiases = np.sum(drelu, axis=0, keepdims=True)
 # update parameters
 weights += -0.001 * dweights
 biases += -0.001 * dbiases
-
-print(weights)
-print(biases)
