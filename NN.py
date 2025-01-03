@@ -4,9 +4,6 @@ from nnfs.datasets import spiral_data
 
 nnfs.init()
 
-X, y = spiral_data(100, 3)
-
-np.random.seed(0)
 
 """
 def create_data(points, classes):
@@ -39,19 +36,15 @@ plt.scatter(X[:, 0], X[:, 1], c=y, cmap="brg")
 plt.show()
 """
 
-"""
-layer1_outputs = np.dot(inputs, np.array(weights).T) + biases
-outputs = np.dot(layer1_outputs, np.array(weights2).T) + biases2
-print(outputs)
-"""
-
 
 class Layer_Dense:
     def __init__(self, n_inputs, n_nuerons):
         self.weights = 0.1 * np.random.randn(n_inputs, n_nuerons)
         self.biases = np.zeros((1, n_nuerons))
 
+    # forward pass
     def forward(self, inputs):
+        self.inputs = inputs
         self.output = np.dot(inputs, self.weights) + self.biases
 
     # backward pass
@@ -79,6 +72,7 @@ class Activation_ReLU:
 
 class Activation_Softmax:
     def forward(self, inputs):
+        self.inputs = inputs
         exp_values = np.exp(
             inputs - np.max(inputs, axis=1, keepdims=True)
         )  # prevent overflow
@@ -105,7 +99,7 @@ class Activation_Softmax:
 class Loss:
     # calculates the data losses
     def calculate(self, output, y):
-        # calculate sampmle losses
+        # calculate sampmle losses usig categorical cross entropy
         sample_losses = self.forward(output, y)
         # calculate mean loss
         data_loss = np.mean(sample_losses)
@@ -133,11 +127,13 @@ class Loss_CategoricalCrossEntropy(Loss):
         return negative_log_likelihoods
 
     # backward pass
-    def backward(self, dvalues, y_true):
+    def backward(self, dvalues, y_true):  # dvalues = y_pred
+        # number of samples
         samples = len(dvalues)
+        # number of labls in each sample
         labels = len(dvalues[0])
 
-        # one hot encode labels
+        # one hot encode labels if labels are sparse
         if len(y_true.shape) == 1:
             y_true = np.eye(labels)[y_true]
 
@@ -152,7 +148,7 @@ class Loss_CategoricalCrossEntropy(Loss):
 class Activation_Softmax_loss_CategoricalCrossentropy:
     def __init__(self):
         # set activation to Softmax
-        self.activation = Activation_Softmax
+        self.activation = Activation_Softmax()
 
         # set loss to categorical cross entropy
         self.loss = Loss_CategoricalCrossEntropy()
@@ -184,37 +180,73 @@ class Activation_Softmax_loss_CategoricalCrossentropy:
         self.dinputs = self.dinputs / samples
 
 
-dense1 = Layer_Dense(2, 3)
-activation1 = Activation_ReLU()
+if __name__ == "__main__":
+    # create data set
+    X, y = spiral_data(100, 3)
+    np.random.seed(0)
 
-dense2 = Layer_Dense(3, 3)
-activation2 = Activation_Softmax()
+    # create first dense layer with 2 input features and 3 output values
+    dense1 = Layer_Dense(2, 3)
 
-dense1.forward(X)
-activation1.forward(dense1.output)
+    # create RELU activation
+    relu_activation = Activation_ReLU()
 
-dense2.forward(activation1.output)
-activation2.forward(dense2.output)
+    # create 2nd dense layer with 3 input features (same as output num. from first layer) and 3 output values
+    dense2 = Layer_Dense(3, 3)
 
-loss_function = Loss_CategoricalCrossEntropy()
-loss = loss_function.calculate(activation2.output, y)
+    # create softmax classifier's combined loss and activation
+    loss_activation = Activation_Softmax_loss_CategoricalCrossentropy()
 
-# calculate values along first axis
-predictions = np.argmax(activation2.output, axis=1)
-if len(y.shape) == 2:
-    y = np.argmax(y, axis=1)
-accuracy = np.mean(predictions == y)
+    # perform forward pass on training data
+    dense1.forward(X)
 
-print("acc: ", accuracy)
+    # perform forward pass through relu_activation function
+    relu_activation.forward(dense1.output)
 
-""" 
-layer_outputs = []  # output of current layer
-for neuron_weights, nueron_bias in zip(weights, biases):
-    nueron_output = 0  # output of given neuron
-    for n_input, weight in zip(inputs, neuron_weights): #loop through elements within each array
-        nueron_output += n_input * weight  # input x weight
-    nueron_output += nueron_bias  # add bias
-    layer_outputs.append(nueron_output)
+    # perform forward pass through 2nd layer
+    dense2.forward(relu_activation.output)
 
-print(layer_outputs)
-"""
+    # perform forward pass through activation/loss function
+    # softmax activation
+    # categorical crossentropy loss
+    loss = loss_activation.forward(dense2.output, y)
+
+    """
+    #break out softmax and loss function
+    softmax_activation = Activation_Softmax()
+    softmax_activation.forward(dense2.output)
+
+    loss_function = Loss_CategoricalCrossEntropy()
+    loss2 = loss_function.calculate(softmax_activation.output, y)
+    """
+
+    # print output of the first few samples
+    print(loss_activation.output[:5])
+    print(loss)
+
+    """
+    # print loss value
+    print("loss: ", loss)
+
+    # calculate accuracy from output
+    predictions = np.argmax(
+        loss_activation.output, axis=1
+    )  # selects output with highest prob
+
+    # if one-hot-encoded, change to a list of y_true values
+    if len(y.shape) == 2:
+        y = np.argmax(y, axis=1)
+    accuracy = np.mean(predictions == y)
+
+    # print accuracy
+    print("acc: ", accuracy)
+
+    # backward pass
+    loss_activation.backward(loss_activation.output, y)
+    dense2.backward(loss_activation.dinputs)
+    relu_activation.backward(dense2.dinputs)
+    dense1.backward(relu_activation.dinputs)
+
+    # print gradients
+    print(dense1.dweights)
+    """
