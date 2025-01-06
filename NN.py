@@ -182,13 +182,28 @@ class Activation_Softmax_loss_CategoricalCrossentropy:
 
 # stochastic gradient descent
 class Optimizer_SGD:
-    def __init__(self, learning_rate=1.0) -> None:
+    def __init__(self, learning_rate=1.0, decay=0.0) -> None:
         self.learning_rate = learning_rate
+        self.current_learning_rate = learning_rate
+        self.decay = decay
+        self.iterations = 0
+
+    # call once before any parameter updates
+    def pre_update_params(self):
+        if self.decay:  # decay rate not zero
+            self.current_learning_rate = self.learning_rate * (
+                1.0 / (1.0 + self.decay * self.iterations)
+            )
 
     # update parameters
     def update_params(self, layer):
         layer.weights += -self.learning_rate * layer.dweights
         layer.biases += -self.learning_rate * layer.dbiases
+
+    # call once before any parameter updates
+    def post_update_params(self):
+        # update iterations
+        self.iterations += 1
 
 
 if __name__ == "__main__":
@@ -209,7 +224,7 @@ if __name__ == "__main__":
     loss_activation = Activation_Softmax_loss_CategoricalCrossentropy()
 
     # create optimizer object
-    optimizer = Optimizer_SGD()
+    optimizer = Optimizer_SGD(decay=1e-2)
 
     for epoch in range(10001):
         # perform forward pass on training data
@@ -246,7 +261,12 @@ if __name__ == "__main__":
         accuracy = np.mean(predictions == y)
 
         if not epoch % 100:
-            print(f"epoch : {epoch}, " + f"acc: {accuracy:.3f}, " + f"loss: {loss:.3f}")
+            print(
+                f"epoch : {epoch}, "
+                + f"acc: {accuracy:.3f}, "
+                + f"loss: {loss:.3f}, "
+                + f"lr: {optimizer.current_learning_rate}"
+            )
 
         # backward pass
         loss_activation.backward(loss_activation.output, y)
@@ -255,5 +275,7 @@ if __name__ == "__main__":
         dense1.backward(relu_activation.dinputs)
 
         # update network layer's parameters
+        optimizer.pre_update_params()
         optimizer.update_params(dense1)
         optimizer.update_params(dense2)
+        optimizer.post_update_params()
