@@ -180,6 +180,17 @@ class Activation_Softmax_loss_CategoricalCrossentropy:
         self.dinputs = self.dinputs / samples
 
 
+# stochastic gradient descent
+class Optimizer_SGD:
+    def __init__(self, learning_rate=1.0) -> None:
+        self.learning_rate = learning_rate
+
+    # update parameters
+    def update_parameters(self, layer):
+        layer.weights += -self.learning_rate * layer.dweights
+        layer.biases += -self.learning_rate * layer.dbiases
+
+
 if __name__ == "__main__":
     # create data set
     X, y = spiral_data(100, 3)
@@ -224,7 +235,6 @@ if __name__ == "__main__":
     print(loss_activation.output[:5])
     print(loss)
 
-    """
     # print loss value
     print("loss: ", loss)
 
@@ -249,4 +259,3 @@ if __name__ == "__main__":
 
     # print gradients
     print(dense1.dweights)
-    """
