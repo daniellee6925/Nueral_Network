@@ -186,7 +186,7 @@ class Optimizer_SGD:
         self.learning_rate = learning_rate
 
     # update parameters
-    def update_parameters(self, layer):
+    def update_params(self, layer):
         layer.weights += -self.learning_rate * layer.dweights
         layer.biases += -self.learning_rate * layer.dbiases
 
@@ -197,65 +197,63 @@ if __name__ == "__main__":
     np.random.seed(0)
 
     # create first dense layer with 2 input features and 3 output values
-    dense1 = Layer_Dense(2, 3)
+    dense1 = Layer_Dense(2, 64)
 
     # create RELU activation
     relu_activation = Activation_ReLU()
 
     # create 2nd dense layer with 3 input features (same as output num. from first layer) and 3 output values
-    dense2 = Layer_Dense(3, 3)
+    dense2 = Layer_Dense(64, 3)
 
     # create softmax classifier's combined loss and activation
     loss_activation = Activation_Softmax_loss_CategoricalCrossentropy()
 
-    # perform forward pass on training data
-    dense1.forward(X)
+    # create optimizer object
+    optimizer = Optimizer_SGD()
 
-    # perform forward pass through relu_activation function
-    relu_activation.forward(dense1.output)
+    for epoch in range(10001):
+        # perform forward pass on training data
+        dense1.forward(X)
 
-    # perform forward pass through 2nd layer
-    dense2.forward(relu_activation.output)
+        # perform forward pass through relu_activation function
+        relu_activation.forward(dense1.output)
 
-    # perform forward pass through activation/loss function
-    # softmax activation
-    # categorical crossentropy loss
-    loss = loss_activation.forward(dense2.output, y)
+        # perform forward pass through 2nd layer
+        dense2.forward(relu_activation.output)
 
-    """
-    #break out softmax and loss function
-    softmax_activation = Activation_Softmax()
-    softmax_activation.forward(dense2.output)
+        # perform forward pass through activation/loss function
+        # softmax activation
+        # categorical crossentropy loss
+        loss = loss_activation.forward(dense2.output, y)
 
-    loss_function = Loss_CategoricalCrossEntropy()
-    loss2 = loss_function.calculate(softmax_activation.output, y)
-    """
+        """
+        #break out softmax and loss function
+        softmax_activation = Activation_Softmax()
+        softmax_activation.forward(dense2.output)
 
-    # print output of the first few samples
-    print(loss_activation.output[:5])
-    print(loss)
+        loss_function = Loss_CategoricalCrossEntropy()
+        loss2 = loss_function.calculate(softmax_activation.output, y)
+        """
 
-    # print loss value
-    print("loss: ", loss)
+        # calculate accuracy from output
+        predictions = np.argmax(
+            loss_activation.output, axis=1
+        )  # selects output with highest prob
 
-    # calculate accuracy from output
-    predictions = np.argmax(
-        loss_activation.output, axis=1
-    )  # selects output with highest prob
+        # if one-hot-encoded, change to a list of y_true values
+        if len(y.shape) == 2:
+            y = np.argmax(y, axis=1)
+        accuracy = np.mean(predictions == y)
 
-    # if one-hot-encoded, change to a list of y_true values
-    if len(y.shape) == 2:
-        y = np.argmax(y, axis=1)
-    accuracy = np.mean(predictions == y)
+        if not epoch % 100:
+            print(f"epoch : {epoch}, " + f"acc: {accuracy:.3f}, " + f"loss: {loss:.3f}")
 
-    # print accuracy
-    print("acc: ", accuracy)
+        # backward pass
+        loss_activation.backward(loss_activation.output, y)
+        dense2.backward(loss_activation.dinputs)
+        relu_activation.backward(dense2.dinputs)
+        dense1.backward(relu_activation.dinputs)
 
-    # backward pass
-    loss_activation.backward(loss_activation.output, y)
-    dense2.backward(loss_activation.dinputs)
-    relu_activation.backward(dense2.dinputs)
-    dense1.backward(relu_activation.dinputs)
-
-    # print gradients
-    print(dense1.dweights)
+        # update network layer's parameters
+        optimizer.update_params(dense1)
+        optimizer.update_params(dense2)
