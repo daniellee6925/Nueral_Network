@@ -299,7 +299,8 @@ if __name__ == "__main__":
     loss_activation = Activation_Softmax_loss_CategoricalCrossentropy()
 
     # create optimizer object
-    optimizer = Optimizer_SGD(decay=1e-3, momentum=0.9)
+    # optimizer = Optimizer_SGD(decay=1e-3, momentum=0.9)
+    optimizer = Optimizer_Adagrad(decay=1e-4)
 
     for epoch in range(10001):
         # perform forward pass on training data
