@@ -281,7 +281,7 @@ class Optimizer_Adagrad:
         self.iterations += 1
 
 
-# Adagrad Optimizer
+# RMSProp Optimizer (root mean squared propagation)
 class Optimizer_RMSprop:
     def __init__(self, learning_rate=0.001, decay=0.0, epsilon=1e-7, rho=0.9) -> None:
         self.learning_rate = learning_rate
