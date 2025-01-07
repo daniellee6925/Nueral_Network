@@ -283,7 +283,7 @@ class Optimizer_Adagrad:
 
 # Adagrad Optimizer
 class Optimizer_RMSprop:
-    def __init__(self, learning_rate=1.0, decay=0.0, epsilon=1e-7, rho=0.9) -> None:
+    def __init__(self, learning_rate=0.001, decay=0.0, epsilon=1e-7, rho=0.9) -> None:
         self.learning_rate = learning_rate
         self.current_learning_rate = learning_rate
         self.decay = decay
@@ -350,7 +350,8 @@ if __name__ == "__main__":
 
     # create optimizer object
     # optimizer = Optimizer_SGD(decay=1e-3, momentum=0.9)
-    optimizer = Optimizer_Adagrad(decay=1e-4)
+    # optimizer = Optimizer_Adagrad(decay=1e-4)
+    optimizer = Optimizer_RMSprop(decay=1e-4)
 
     for epoch in range(10001):
         # perform forward pass on training data
