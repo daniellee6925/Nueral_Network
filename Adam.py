@@ -38,24 +38,41 @@ class Optimizer_Adam:
             self.beta_1 * layer.bias_momentums + (1 - self.beta_1) * layer.dbiases
         )
 
+        # get corrected momentum
+        # update cache with squared current gradients
+        weight_momentums_corrected = layer.weight_momentums / (
+            1 - self.beta_1 ** (self.iterations + 1)
+        )
+        bias_momentums_corrected = layer.bias_momentums / (
+            1 - self.beta_1 ** (self.iterations + 1)
+        )
+
         # update cache with squared current gradients
         layer.weight_cache = (
-            self.rho * layer.weight_cache + (1 - self.rho) * layer.dweights**2
+            self.beta_2 * layer.weight_cache + (1 - self.beta_2) * layer.dweights**2
         )
         layer.bias_cache = (
-            self.rho * layer.bias_cache + (1 - self.rho) * layer.dbiases**2
+            self.beta_2 * layer.bias_cache + (1 - self.beta_2) * layer.dbiases**2
+        )
+
+        # get corrected cache
+        weight_cache_corrected = layer.weight_cache / (
+            1 - self.beta_2 ** (self.iterations + 1)
+        )
+        bias_cache_corrected = layer.bias_cache / (
+            1 - self.beta_2 ** (self.iterations + 1)
         )
 
         # Vanilla SGD parameter update + normalization with square rooted cache
         layer.weights += (
             -self.current_learning_rate
-            * layer.dweights
-            / (np.sqrt(layer.weight_cache) + self.epsilon)
+            * weight_momentums_corrected
+            / (np.sqrt(weight_cache_corrected) + self.epsilon)
         )
         layer.biases += (
             -self.current_learning_rate
-            * layer.dbiases
-            / (np.sqrt(layer.bias_cache) + self.epsilon)
+            * bias_momentums_corrected
+            / (np.sqrt(bias_cache_corrected) + self.epsilon)
         )
 
     # call once before any parameter updates
