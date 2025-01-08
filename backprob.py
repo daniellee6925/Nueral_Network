@@ -61,7 +61,7 @@ dw = [drelu_dw0, drelu_dw1, drelu_dw2]
 db = drelu_db
 
 
-import numpy as np
+import numpy as np  # noqa: E402
 
 # an array of  incremental gradient values
 dvalues = np.array([[1, 1, 1], [2, 2, 2], [3, 3, 3]])

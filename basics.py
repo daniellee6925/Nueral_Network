@@ -47,7 +47,7 @@ new_astronaut = Astronaut("Guya", 9, "Gold", 48)
 return_age = new_astronaut.age_on_return()
 
 
-import numpy as np
+import numpy as np  # noqa: E402
 
 y_true = np.array([1, 0, 1])
 print(len(y_true.shape))
