@@ -10,13 +10,29 @@ nnfs.init()
 
 
 class Layer_Dense:
-    def __init__(self, n_inputs, n_nuerons):
+    def __init__(
+        self,
+        n_inputs,
+        n_nuerons,
+        weight_regularizer_L1=0,
+        weight_regularizer_L2=0,
+        bias_regularizer_L1=0,
+        bias_regularizer_L2=0,
+    ):
+        # set initial weights and biases
         self.weights = 0.1 * np.random.randn(n_inputs, n_nuerons)
         self.biases = np.zeros((1, n_nuerons))
+        # set regularization strenght
+        self.weight_regularizer_L1 = weight_regularizer_L1
+        self.weight_regularizer_L2 = weight_regularizer_L2
+        self.bias_regularizer_L1 = bias_regularizer_L1
+        self.bias_regularizer_L2 = bias_regularizer_L2
 
     # forward pass
     def forward(self, inputs):
+        # remember input values
         self.inputs = inputs
+        # calculate output values
         self.output = np.dot(inputs, self.weights) + self.biases
 
     # backward pass
@@ -24,6 +40,28 @@ class Layer_Dense:
         # gradients on paremeters
         self.dweights = np.dot(self.inputs.T, dvalues)
         self.dbiases = np.sum(dvalues, axis=0, keepdims=True)
+
+        # gradients on regularization
+        # L1 on weights
+        if self.weight_regularizer_L1 > 0:
+            dL1 = np.ones_like(self.weights)
+            dL1[self.weights < 0] = -1
+            self.dweights += self.weight_regularizer_L1 * dL1
+
+        # L2 on weights
+        if self.weight_regularizer_L2 > 0:
+            self.dweights += 2 * self.weight_regularizer_L2 * self.weights
+
+        # L1 on bias
+        if self.bias_regularizer_L1 > 0:
+            dL1 = np.ones_like(self.biases)
+            dL1[self.biases < 0] = -1
+            self.dbiases += self.bias_regularizer_L1 * dL1
+
+        # L2 on weights
+        if self.bias_regularizer_L2 > 0:
+            self.dbiases += 2 * self.bias_regularizer_L2 * self.biases
+
         # gradient on values
         self.dinputs = np.dot(dvalues, self.weights.T)
 
@@ -69,6 +107,38 @@ class Activation_Softmax:
 
 
 class Loss:
+    # regularization loss calculation
+    def regularization_loss(self, layer):
+        # 0 by default
+        regularization_loss = 0
+
+        # L1 regularization - weights
+        # calculate only when factor greater than 0
+        if layer.weight_regularizer_L1 > 0:
+            regularization_loss += layer.weight_regularizer_L1 * np.sum(
+                np.abs(layer.weights)
+            )
+
+        # L2 regularization - weights
+        if layer.weight_regularizer_L2 > 0:
+            regularization_loss += layer.weight_regularizer_L2 * np.sum(
+                layer.weights * layer.weights
+            )
+
+        # L1 regularization - biases
+        if layer.bias_regularizer_L1 > 0:
+            regularization_loss += layer.bias_regularizer_L1 * np.sum(
+                np.abs(layer.biases)
+            )
+
+        # L2 regularization - weights
+        if layer.bias_regularizer_L2 > 0:
+            regularization_loss += layer.bias_regularizer_L2 * np.sum(
+                layer.biases * layer.biases
+            )
+
+        return regularization_loss
+
     # calculates the data losses
     def calculate(self, output, y):
         # calculate sampmle losses usig categorical cross entropy
@@ -157,7 +227,7 @@ if __name__ == "__main__":
     X, y = spiral_data(100, 3)
 
     # create first dense layer with 2 input features and 3 output values
-    dense1 = Layer_Dense(2, 64)
+    dense1 = Layer_Dense(2, 64, weight_regularizer_L2=5e-4, bias_regularizer_L2=5e-4)
 
     # create RELU activation
     relu_activation = Activation_ReLU()
@@ -187,8 +257,14 @@ if __name__ == "__main__":
         # perform forward pass through activation/loss function
         # softmax activation
         # categorical crossentropy loss
-        loss = loss_activation.forward(dense2.output, y)
+        data_loss = loss_activation.forward(dense2.output, y)
 
+        # calculate regularization penalty
+        regularization_loss = loss_activation.loss.regularization_loss(dense1)
+        +loss_activation.loss.regularization_loss(dense2)
+
+        # calculate overall loss
+        loss = data_loss + regularization_loss
         """
         #break out softmax and loss function
         softmax_activation = Activation_Softmax()
@@ -196,18 +272,6 @@ if __name__ == "__main__":
 
         loss_function = Loss_CategoricalCrossEntropy()
         loss2 = loss_function.calculate(softmax_activation.output, y)
-        """
-        """
-        # Validate the model
-
-        # create dataset
-        X_test, y_test = spiral_data(samples=100, classes=3)
-
-        # perform forward pass on layer and activation
-        dense1.forward(X_test)
-        relu_activation.forward(dense1.output)
-        dense2.forward(relu_activation.output)
-        loss = loss_activation.forward(dense2.output, y_test)
         """
 
         # calculate accuracy from output
@@ -224,7 +288,8 @@ if __name__ == "__main__":
             print(
                 f"epoch : {epoch}, "
                 + f"acc: {accuracy:.3f}, "
-                + f"loss: {loss:.3f}, "
+                + f"data_loss: {loss:.3f}, "
+                + f"reg_loss: {regularization_loss:.3f}, "
                 + f"lr: {optimizer.current_learning_rate}"
             )
 
@@ -239,3 +304,24 @@ if __name__ == "__main__":
         optimizer.update_params(dense1)
         optimizer.update_params(dense2)
         optimizer.post_update_params()
+
+    # Validate the model
+
+    # create dataset
+    X_test, y_test = spiral_data(samples=100, classes=3)
+
+    # perform forward pass on layer and activation
+    dense1.forward(X_test)
+    relu_activation.forward(dense1.output)
+    dense2.forward(relu_activation.output)
+    loss = loss_activation.forward(dense2.output, y_test)
+
+    predictions = np.argmax(
+        loss_activation.output, axis=1
+    )  # selects output with highest prob
+    # if one-hot-encoded, change to a list of y_true values
+    if len(y.shape) == 2:
+        y = np.argmax(y_test, axis=1)
+    accuracy = np.mean(predictions == y_test)
+
+    print(f"validation, acc: {accuracy:.3f}, loss: {loss:.3f}")
