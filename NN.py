@@ -187,7 +187,6 @@ class Activation_Softmax_loss_CategoricalCrossentropy:
 if __name__ == "__main__":
     # create data set
     X, y = spiral_data(100, 3)
-    np.random.seed(0)
 
     # create first dense layer with 2 input features and 3 output values
     dense1 = Layer_Dense(2, 64)
@@ -229,6 +228,18 @@ if __name__ == "__main__":
 
         loss_function = Loss_CategoricalCrossEntropy()
         loss2 = loss_function.calculate(softmax_activation.output, y)
+        """
+        """
+        # Validate the model
+
+        # create dataset
+        X_test, y_test = spiral_data(samples=100, classes=3)
+
+        # perform forward pass on layer and activation
+        dense1.forward(X_test)
+        relu_activation.forward(dense1.output)
+        dense2.forward(relu_activation.output)
+        loss = loss_activation.forward(dense2.output, y_test)
         """
 
         # calculate accuracy from output
