@@ -75,13 +75,19 @@ class Layer_Dropout:
     def forward(self, inputs):
         # save inputs
         self.inputs = inputs
-        # generate and save scaled mask
+        # generate and save scaled mask prints out rate% of 1s and (1-rate)% of 0s
         self.binary_mask = (
             np.random.binomial(1, self.rate, size=inputs.shape) / self.rate
         )
 
         # apply mask to output values
         self.output = inputs * self.binary_mask
+
+    # backward pass
+    def backward(self, dvalues):
+        # gradient on values.
+        # zeros beomce zeros, rest are same
+        self.dinputs = dvalues * self.binary_mask
 
 
 class Activation_ReLU:
@@ -250,6 +256,9 @@ if __name__ == "__main__":
     # create RELU activation
     relu_activation = Activation_ReLU()
 
+    # create dropout layer
+    dropout1 = Layer_Dropout(0.1)
+
     # create 2nd dense layer with 3 input features (same as output num. from first layer) and 3 output values
     dense2 = Layer_Dense(64, 3)
 
@@ -269,8 +278,11 @@ if __name__ == "__main__":
         # perform forward pass through relu_activation function
         relu_activation.forward(dense1.output)
 
+        # perform a forwad pass through dropout layer
+        dropout1.forward(relu_activation.output)
+
         # perform forward pass through 2nd layer
-        dense2.forward(relu_activation.output)
+        dense2.forward(dropout1.output)
 
         # perform forward pass through activation/loss function
         # softmax activation
@@ -314,7 +326,8 @@ if __name__ == "__main__":
         # backward pass
         loss_activation.backward(loss_activation.output, y)
         dense2.backward(loss_activation.dinputs)
-        relu_activation.backward(dense2.dinputs)
+        dropout1.backward(dense2.dinputs)
+        relu_activation.backward(dropout1.dinputs)
         dense1.backward(relu_activation.dinputs)
 
         # update network layer's parameters
