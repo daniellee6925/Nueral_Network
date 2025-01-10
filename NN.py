@@ -251,7 +251,7 @@ if __name__ == "__main__":
     X, y = spiral_data(100, 3)
 
     # create first dense layer with 2 input features and 3 output values
-    dense1 = Layer_Dense(2, 64, weight_regularizer_L2=5e-4, bias_regularizer_L2=5e-4)
+    dense1 = Layer_Dense(2, 512, weight_regularizer_L2=5e-4, bias_regularizer_L2=5e-4)
 
     # create RELU activation
     relu_activation = Activation_ReLU()
@@ -260,7 +260,7 @@ if __name__ == "__main__":
     dropout1 = Layer_Dropout(0.1)
 
     # create 2nd dense layer with 3 input features (same as output num. from first layer) and 3 output values
-    dense2 = Layer_Dense(64, 3)
+    dense2 = Layer_Dense(512, 3)
 
     # create softmax classifier's combined loss and activation
     loss_activation = Activation_Softmax_loss_CategoricalCrossentropy()
